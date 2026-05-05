@@ -4,6 +4,7 @@ Documentation hub for pyMC projects, currently focused on:
 
 - pyMC_core
 - pyMC_Repeater
+- pyMC_HA
 
 Built with Astro Starlight and styled to align with files.pymc.dev brand direction.
 
