@@ -14,8 +14,7 @@ pyMC_core is a Python implementation of MeshCore for LoRa mesh networking on Ras
 
 ## Useful links
 
-- Project repository: [pyMC_core](https://github.com/rightup/pyMC_core)
-- Published docs: [rightup.github.io/pyMC_core](https://rightup.github.io/pyMC_core/)
+- Project repository: [pyMC_core](https://github.com/pyMC-dev/pyMC_core)
 - PyPI package: [pymc-core](https://pypi.org/project/pymc-core/)
 
 ## Next step
