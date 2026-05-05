@@ -35,8 +35,3 @@ title: Page Title
 description: One-line page description
 ---
 ```
-
-## Theming
-
-- Site config: `astro.config.mjs`
-- Brand overrides: `src/styles/brand.css`
