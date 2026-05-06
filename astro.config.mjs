@@ -9,7 +9,18 @@ export default defineConfig({
 		starlight({
 			title: 'pyMC Docs',
 			description: 'Documentation hub for pyMC Core, pyMC Repeater, and pyMC HA Integration',
+			favicon: '/favicon.png',
 			head: [
+				{
+					tag: 'script',
+					content: `(() => {
+	try {
+		if (typeof localStorage !== 'undefined' && !localStorage.getItem('starlight-theme')) {
+			localStorage.setItem('starlight-theme', 'dark');
+		}
+	} catch {}
+})();`,
+				},
 				{
 					tag: 'script',
 					content: `(() => {
@@ -52,7 +63,7 @@ export default defineConfig({
 				{ icon: 'github', label: 'pyMC on GitHub', href: 'https://github.com/pymc-dev' },
 			],
 			editLink: {
-				baseUrl: 'https://github.com/pymc-dev/MC_PROJECT/edit/main/pyMC_docs/',
+				baseUrl: 'https://github.com/pyMC-dev/pyMC_docs/edit/main/',
 			},
 			sidebar: [
 				{
