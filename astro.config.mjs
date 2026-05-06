@@ -53,7 +53,7 @@ export default defineConfig({
 				{ icon: 'github', label: 'pyMC on GitHub', href: 'https://github.com/pymc-dev' },
 			],
 			editLink: {
-				baseUrl: 'https://github.com/pymc-dev/MC_PROJECT/edit/main/pyMC_docs/',
+				baseUrl: 'https://github.com/pyMC-dev/pyMC_docs/edit/main/',
 			},
 			sidebar: [
 				{
