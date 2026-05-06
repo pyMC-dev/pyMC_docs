@@ -9,6 +9,7 @@ export default defineConfig({
 		starlight({
 			title: 'pyMC Docs',
 			description: 'Documentation hub for pyMC Core, pyMC Repeater, and pyMC HA Integration',
+			favicon: '/favicon.png',
 			head: [
 				{
 					tag: 'script',
