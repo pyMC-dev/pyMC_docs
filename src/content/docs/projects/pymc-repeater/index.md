@@ -14,7 +14,7 @@ pyMC_Repeater is a Python repeater daemon built on top of pyMC_core.
 
 ## Useful links
 
-- Project repository: [pyMC_Repeater](https://github.com/rightup/pyMC_Repeater)
+- Project repository: [pyMC Repeater](https://github.com/pyMC-dev/pyMC_Repeater)
 
 ## Next step
 

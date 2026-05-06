@@ -12,7 +12,7 @@ description: Install and run pyMC_Repeater on supported hosts.
 ## Install from source
 
 ```bash
-git clone https://github.com/rightup/pyMC_Repeater.git
+git clone https://github.com/pyMC-dev/pyMC_Repeater.git
 cd pyMC_Repeater
 sudo ./manage.sh
 ```

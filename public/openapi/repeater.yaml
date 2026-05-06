@@ -15,7 +15,7 @@ info:
   version: 1.0.0
   contact:
     name: pyMC Repeater
-    url: https://github.com/rightup/pyMC_Repeater
+    url: https://github.com/pyMC-dev/pyMC_Repeater
 
 servers:
   - url: /api

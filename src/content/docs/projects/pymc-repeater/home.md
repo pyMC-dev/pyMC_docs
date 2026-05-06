@@ -37,6 +37,6 @@ This section tracks the current local `pyMC_Repeater` repo rather than the older
 
 ## External resources
 
-- [pyMC_Repeater repository](https://github.com/rightup/pyMC_Repeater)
+- [pyMC Repeater repository](https://github.com/pyMC-dev/pyMC_Repeater)
 - [pyMC Core](https://github.com/pyMC-dev/pyMC_core)
 - [MeshCore](https://github.com/rightup/MeshCore)

@@ -19,7 +19,7 @@ The main configuration file is `/etc/pymc_repeater/config.yaml`.
 The current upstream README uses the management script directly:
 
 ```bash
-git clone https://github.com/rightup/pyMC_Repeater.git
+git clone https://github.com/pyMC-dev/pyMC_Repeater.git
 cd pyMC_Repeater
 sudo ./manage.sh
 ```
@@ -66,7 +66,7 @@ Start with [KISS Setup](/projects/pymc-repeater/kiss-setup/).
 The repo README now documents a Proxmox host-side installer for CH341-backed repeaters.
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/rightup/pyMC_Repeater/feat/newRadios/scripts/proxmox-install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/pyMC-dev/pyMC_Repeater/main/scripts/proxmox-install.sh)"
 ```
 
 That flow is intended to run on the Proxmox host, not inside the container.

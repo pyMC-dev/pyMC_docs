@@ -451,7 +451,7 @@ python3 check_address.py
 
 ## Additional Resources
 
-- [pyMC_Repeater GitHub](https://github.com/rightup/pyMC_Repeater)
+- [pyMC Repeater GitHub](https://github.com/pyMC-dev/pyMC_Repeater)
 - [MeshCore Firmware](https://github.com/rightup/MeshCore)
 - [Configuration Guide](/projects/pymc-repeater/config-file/)
 - [Installation Guide](/projects/pymc-repeater/installation/)

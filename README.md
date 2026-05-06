@@ -1,37 +1,35 @@
 # pyMC Docs
 
-Documentation hub for pyMC projects, currently focused on:
+This repository contains the documentation site for the `pyMC-dev` organization.
 
-- pyMC_core
-- pyMC_Repeater
-- pyMC_HA
+It brings together docs for:
 
-Built with Astro Starlight and styled to align with files.pymc.dev brand direction.
+- `pyMC Core`
+- `pyMC Repeater`
+- `pyMC HA Integration`
+
+The production site is:
+
+- https://docs.pymc.dev/
+
+## What This Repo Is For
+
+This repo is the central home for public-facing docs across the `pyMC-dev` org. It is where project overviews, setup guides, configuration references, integration docs, and shared contributor-facing content live.
+
+The site is built with Astro and Starlight.
+
+## Project Docs
+
+- `pyMC Core`: https://docs.pymc.dev/projects/pymc-core/
+- `pyMC Repeater`: https://docs.pymc.dev/projects/pymc-repeater/
+- `pyMC HA Integration`: https://docs.pymc.dev/projects/pymc-ha-integration/
 
 ## Local Development
 
-```bash
-npm install
-npm run dev
-```
+See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md).
 
-## Build
+## Contributing
 
-```bash
-npm run build
-```
+For contribution guidance, page structure, and authoring conventions, see:
 
-## Content Authoring
-
-- Place Markdown files in `src/content/docs/`
-- Add project pages under:
-	- `src/content/docs/projects/pymc-core/`
-	- `src/content/docs/projects/pymc-repeater/`
-- Use frontmatter:
-
-```md
----
-title: Page Title
-description: One-line page description
----
-```
+- https://docs.pymc.dev/contributing/
