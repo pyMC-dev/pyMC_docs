@@ -59,13 +59,70 @@ const mountId = 'pymc-openapi-viewer';
 
 <style>
   .openapi-shell {
-    border: 1px solid #3b82f636;
+    --openapi-shell-border: #3b82f636;
+    --openapi-shell-bg: linear-gradient(160deg, #0e203fbc 0%, #0a1628cf 100%);
+    --openapi-shell-shadow: 0 14px 36px #00000066, inset 0 1px 0 #ffffff12;
+    --openapi-surface: #0a1628d4;
+    --openapi-surface-2: #102545cc;
+    --openapi-border: #3b82f640;
+    --openapi-text: #e5efff;
+    --openapi-muted: #b4c6e5;
+    --openapi-blue: #60a5fa;
+    --openapi-blue-strong: #3b82f6;
+    --openapi-teal: #22d3ee;
+    --openapi-button-bg: #1d4ed833;
+    --openapi-button-border: #3b82f666;
+    --openapi-button-text: #dbeafe;
+    --openapi-button-bg-hover: #2563eb52;
+    --openapi-button-border-hover: #60a5fa;
+    --openapi-button-shadow-hover: 0 0 0 3px #60a5fa2e;
+    --openapi-button-text-hover: #ffffff;
+    --openapi-try-bg: #0891b233;
+    --openapi-try-border: #22d3ee7a;
+    --openapi-try-text: #cffafe;
+    --openapi-try-bg-hover: #0891b255;
+    --openapi-try-border-hover: #67e8f9;
+    --openapi-code-bg: #081225;
+    --openapi-code-border: #1d4ed85c;
+    --openapi-input-bg: #081225;
+    --openapi-input-border: #3b82f64d;
+    border: 1px solid var(--openapi-shell-border);
     border-radius: 0.9rem;
-    background: linear-gradient(160deg, #0e203fbc 0%, #0a1628cf 100%);
-    box-shadow: 0 14px 36px #00000066, inset 0 1px 0 #ffffff12;
+    background: var(--openapi-shell-bg);
+    box-shadow: var(--openapi-shell-shadow);
     backdrop-filter: blur(16px) saturate(1.35);
     -webkit-backdrop-filter: blur(16px) saturate(1.35);
     overflow: hidden;
+  }
+
+  :global(html[data-theme='light']) .openapi-shell {
+    --openapi-shell-border: #cbdcf8;
+    --openapi-shell-bg: linear-gradient(160deg, #ffffffef 0%, #eef5fffa 100%);
+    --openapi-shell-shadow: 0 14px 36px #93a8c526, inset 0 1px 0 #ffffffd9;
+    --openapi-surface: #ffffff;
+    --openapi-surface-2: #f5f9ff;
+    --openapi-border: #cbdcf8;
+    --openapi-text: #0f172a;
+    --openapi-muted: #475569;
+    --openapi-blue: #2563eb;
+    --openapi-blue-strong: #1d4ed8;
+    --openapi-teal: #0891b2;
+    --openapi-button-bg: #dbeafe;
+    --openapi-button-border: #93c5fd;
+    --openapi-button-text: #1d4ed8;
+    --openapi-button-bg-hover: #bfdbfe;
+    --openapi-button-border-hover: #60a5fa;
+    --openapi-button-shadow-hover: 0 0 0 3px #dbeafe;
+    --openapi-button-text-hover: #1e3a8a;
+    --openapi-try-bg: #cffafe;
+    --openapi-try-border: #67e8f9;
+    --openapi-try-text: #0f766e;
+    --openapi-try-bg-hover: #a5f3fc;
+    --openapi-try-border-hover: #22d3ee;
+    --openapi-code-bg: #eff6ff;
+    --openapi-code-border: #bfdbfe;
+    --openapi-input-bg: #ffffff;
+    --openapi-input-border: #cbdcf8;
   }
 
   #pymc-openapi-viewer {
@@ -75,15 +132,15 @@ const mountId = 'pymc-openapi-viewer';
   :global(.swagger-ui) {
     font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     background: transparent;
-    color: #e5efff;
-    --pymc-surface: #0a1628d4;
-    --pymc-surface-2: #102545cc;
-    --pymc-border: #3b82f640;
-    --pymc-text: #e5efff;
-    --pymc-muted: #b4c6e5;
-    --pymc-blue: #60a5fa;
-    --pymc-blue-strong: #3b82f6;
-    --pymc-teal: #22d3ee;
+    color: var(--openapi-text);
+    --pymc-surface: var(--openapi-surface);
+    --pymc-surface-2: var(--openapi-surface-2);
+    --pymc-border: var(--openapi-border);
+    --pymc-text: var(--openapi-text);
+    --pymc-muted: var(--openapi-muted);
+    --pymc-blue: var(--openapi-blue);
+    --pymc-blue-strong: var(--openapi-blue-strong);
+    --pymc-teal: var(--openapi-teal);
   }
 
   :global(.swagger-ui .topbar) {
@@ -199,9 +256,9 @@ const mountId = 'pymc-openapi-viewer';
   }
 
   :global(.swagger-ui .btn) {
-    background: #1d4ed833;
-    border: 1px solid #3b82f666;
-    color: #dbeafe;
+    background: var(--openapi-button-bg);
+    border: 1px solid var(--openapi-button-border);
+    color: var(--openapi-button-text);
     border-radius: 999px;
     font-weight: 600;
     transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
@@ -209,24 +266,24 @@ const mountId = 'pymc-openapi-viewer';
 
   :global(.swagger-ui .btn:hover),
   :global(.swagger-ui .btn:focus-visible) {
-    background: #2563eb52;
-    border-color: #60a5fa;
-    box-shadow: 0 0 0 3px #60a5fa2e;
-    color: #ffffff;
+    background: var(--openapi-button-bg-hover);
+    border-color: var(--openapi-button-border-hover);
+    box-shadow: var(--openapi-button-shadow-hover);
+    color: var(--openapi-button-text-hover);
     outline: none;
   }
 
   :global(.swagger-ui .btn.execute),
   :global(.swagger-ui .try-out__btn) {
-    background: #0891b233;
-    border-color: #22d3ee7a;
-    color: #cffafe;
+    background: var(--openapi-try-bg);
+    border-color: var(--openapi-try-border);
+    color: var(--openapi-try-text);
   }
 
   :global(.swagger-ui .btn.execute:hover),
   :global(.swagger-ui .try-out__btn:hover) {
-    background: #0891b255;
-    border-color: #67e8f9;
+    background: var(--openapi-try-bg-hover);
+    border-color: var(--openapi-try-border-hover);
   }
 
   :global(.swagger-ui .responses-table tbody tr td),
@@ -244,9 +301,9 @@ const mountId = 'pymc-openapi-viewer';
   :global(.swagger-ui textarea),
   :global(.swagger-ui .curl-command),
   :global(.swagger-ui .response-col_description__inner div.markdown) {
-    background: #081225 !important;
-    color: #dbeafe !important;
-    border: 1px solid #1d4ed85c;
+    background: var(--openapi-code-bg) !important;
+    color: var(--pymc-text) !important;
+    border: 1px solid var(--openapi-code-border);
     border-radius: 0.55rem;
   }
 
@@ -255,8 +312,8 @@ const mountId = 'pymc-openapi-viewer';
   :global(.swagger-ui input[type='search']),
   :global(.swagger-ui textarea),
   :global(.swagger-ui select) {
-    background: #081225;
-    border: 1px solid #3b82f64d;
+    background: var(--openapi-input-bg);
+    border: 1px solid var(--openapi-input-border);
     border-radius: 0.5rem;
     color: var(--pymc-text);
   }

@@ -14,6 +14,16 @@ export default defineConfig({
 				{
 					tag: 'script',
 					content: `(() => {
+	try {
+		if (typeof localStorage !== 'undefined' && !localStorage.getItem('starlight-theme')) {
+			localStorage.setItem('starlight-theme', 'dark');
+		}
+	} catch {}
+})();`,
+				},
+				{
+					tag: 'script',
+					content: `(() => {
 	const markExternalLinks = () => {
 		document.querySelectorAll('a[href]').forEach((link) => {
 			const href = link.getAttribute('href');
