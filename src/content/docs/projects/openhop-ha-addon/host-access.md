@@ -48,6 +48,18 @@ That means:
 - upstream runtime config path: `/etc/openhop_repeater/config.yaml`, through a
   symlink to `/config`
 
+With a plugin-capable Repeater image, the default application-plugin root is
+`/var/lib/openhop_repeater/plugins` when `storage.storage_dir` uses the mapped
+runtime directory. Installed releases, plugin state, plugin data, and logs live
+under that root and must be included in backups. A custom `plugins.root` (or
+compatibility `plugins.plugins_dir`) outside a persistent mount will not survive
+container replacement.
+
+Plugin-manager communication uses a local Unix socket; it does not require a new
+host TCP port. Do not expose that socket or enable extra host access just to fix
+an unavailable manager. Application plugins run code with the container's access,
+so the add-on's broad privileges also apply to the plugin trust decision.
+
 ## Network behavior
 
 The repeater web UI binds to port `8000` on the Home Assistant host.

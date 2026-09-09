@@ -27,6 +27,22 @@ Persist identity, contacts, channels, preferences, and messages explicitly. The 
 stores are in memory and persistence hooks are no-ops until the application implements
 them.
 
+### Send results and CLI text
+
+In Core dev, `send_raw_packet(priority, packet_bytes)` returns `SentResult`, not
+a boolean. Check `.success`; parse failures use `error="illegal_arg"` and send
+failures use `error="send_failed"`.
+
+Both `TXT_TYPE_CLI_DATA` and `TXT_TYPE_CLI_COMMAND` bypass delivery-ACK waiting in
+`send_text_message()` and report `expected_ack=0`. Do not wait for a normal text
+ACK for a CLI operation. `send_repeater_command()` defaults to `TXT_TYPE_CLI_DATA`
+for older repeater compatibility; use its `txt_type=TXT_TYPE_CLI_COMMAND` option
+when addressing a newer companion that requires explicit command messages.
+Replies still use CLI_DATA. Core delivers incoming CLI_COMMAND text to the
+application; it does not execute a local command automatically.
+
+Source: [current send operations](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/companion/base_send.py).
+
 ## Sensor or automation gateway
 
 A gateway can use `CompanionRadio` to discover contacts and issue telemetry or binary
@@ -130,8 +146,14 @@ Current callback families include:
 - contact deletion/capacity and channel updates.
 
 Callbacks can be synchronous or awaitable through the companion callback layer. Keep
-them fast, isolate failures, and hand database/network work to bounded queues. Clear
-callbacks and pending request state when the owning component shuts down.
+them fast, isolate failures, and hand database/network work to bounded queues.
+Registration through `add_push_callback(event_name, callback)` is idempotent.
+Use `remove_push_callback(event_name, callback)` to retract only subscriptions
+owned by the component being stopped. `clear_push_callbacks()` removes every
+subscriber, including other applications, SSE streams, or plugins sharing the
+companion; reserve it for whole-companion teardown.
+
+Source: [callback ownership](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/companion/base_callbacks.py).
 
 ## Preferences, scope, and radio controls
 
@@ -143,6 +165,11 @@ them.
 Check capability methods before changing frequency, modulation, TX power, or client
 repeat behavior. Validate region, hardware, antenna, and mesh compatibility in the
 host application.
+
+Companion-originated flood requests, including a forced-flood retry after a
+direct-path failure, use the companion's own scope policy. They are not forced
+unscoped merely because they are retries; a bridge's host must not overwrite the
+companion's resolved region decision.
 
 ## Models
 
@@ -160,7 +187,7 @@ The current public data models include:
 | `MessageEvent`, `ChannelMessageEvent`, `ChannelDataEvent` | Structured callback payloads |
 
 Inspect the pinned
-[`models.py`](https://github.com/openhop-dev/openhop_core/blob/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/companion/models.py)
+[`models.py`](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/companion/models.py)
 for exact fields. Do not serialize object internals as a stable external schema unless
 the application owns and versions that schema.
 

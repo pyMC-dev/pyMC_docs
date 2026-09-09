@@ -10,7 +10,7 @@ for the firmware you actually have; “KISS” alone does not imply the MeshCore
 SetHardware extension API.
 
 This compatibility guide tracks openHop Core `dev` commit
-[`77f116a`](https://github.com/openhop-dev/openhop_core/blob/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/hardware/kiss_modem_wrapper.py)
+[`68272ce`](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/hardware/kiss_modem_wrapper.py)
 and the pinned MeshCore protocol document at
 [`fb2c61f`](https://github.com/meshcore-dev/MeshCore/blob/fb2c61f862fcd4c6e08cf0f882175ca260052b13/docs/kiss_modem_protocol.md).
 That MeshCore revision includes the 255-byte MTU, single-pending-TX behavior,
@@ -109,7 +109,7 @@ Public convenience methods cover the operations above, including
 `get_identity()`, `get_random()`, `sign_data()`, `verify_signature()`,
 `encrypt_data()`, `decrypt_data()`, `key_exchange()`, `hash_data()`, radio/status
 queries, sensor queries, and asynchronous query variants. See the exact
-[`KissModemWrapper` source](https://github.com/openhop-dev/openhop_core/blob/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/hardware/kiss_modem_wrapper.py)
+[`KissModemWrapper` source](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/hardware/kiss_modem_wrapper.py)
 for current signatures and validation.
 
 ## Data, TxDone, and RxMeta
@@ -148,9 +148,16 @@ rather than blocking the serial RX thread.
 | `EncryptFailed` | `0x06` | Encryption operation failed |
 | `TxBusy` | `0x07` | Another Data TX is pending or the modem's host-output queue is full |
 
-The wrapper routes `TxBusy` to the current Data sender and fails it promptly; it
-does not leave that error queued for an unrelated SetHardware caller. Invalid
-escapes and oversize receive frames increment `frame_errors` and resynchronize.
+`TxBusy` is ambiguous: it can mean pending radio TX **or** a full host-output
+queue. The wrapper records it in diagnostics but does not fail an in-flight Data
+send merely because it arrived. Only `TxDone` status `0x01` confirms successful
+transmission; a busy indication followed by a successful `TxDone` is a successful
+send. `TxBusy` is not consumed as an unrelated SetHardware command response.
+
+No `TxDone` before the bounded deadline leaves the send unconfirmed. Neither
+that timeout nor a failed `TxDone` proves that nothing went on air, so retries
+must account for possible duplicate delivery. Invalid escapes and oversize
+receive frames increment `frame_errors` and resynchronize.
 Serial write/read failures mark the link degraded, wake waiting senders, close
 the failed generation, and start guarded reconnect handling. `connect()` reports
 success only after the serial reader is alive and the post-connect handshake

@@ -118,6 +118,24 @@ curl -u admin:REPLACE_WITH_PASSWORD http://<modem-host>/api/stats
 curl -u admin:REPLACE_WITH_PASSWORD http://<modem-host>/
 ```
 
+## Wi-Fi power save
+
+Current dev firmware provides **Wi-Fi power save** in the modem WebUI's network
+settings. It defaults to enabled, including on Station G2/G3; it is no longer a
+Station-only hardcoded policy. Disabling it can reduce Wi-Fi latency at the cost
+of higher power draw. Consider that tradeoff when investigating delayed TCP
+packets or idle Wi-Fi connectivity, particularly on battery-powered deployments.
+
+The setting is persisted and applies after the network-settings save/reboot.
+Management clients can use the boolean `wifi_power_save` in `POST /api/config`.
+Wi-Fi-capable boards expose it in `GET /api/config`; non-Wi-Fi boards do not
+support it. It does not change LoRa modulation or RF power.
+
+Source: [Wi-Fi configuration and startup](https://github.com/openhop-dev/openhop_modem/blob/b95a809e6ae37260dc146d59d25f63132962f63f/firmware/src/wifi_manager.cpp)
+and [management API](https://github.com/openhop-dev/openhop_modem/blob/b95a809e6ae37260dc146d59d25f63132962f63f/firmware/src/ota_manager.cpp).
+Check the installed firmware revision; source dev changes need not yet be in the
+flasher's selected published assets.
+
 ## Network exposure
 
 The modem network services are intended for LAN use. Do not port-forward the modem TCP service or HTTP management page to the public Internet. Use a VPN if the repeater and modem are not on the same private network.

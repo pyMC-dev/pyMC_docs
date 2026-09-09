@@ -36,6 +36,21 @@ A basic Repeater can:
 
 openHop Repeater can also host higher-level MeshCore services.
 
+### Application and service plugins
+
+The plugin manager installs external applications from a catalogue or a local
+Python wheel. A plugin can provide a dashboard application, a background service,
+or both. It has versioned code, its own Python environment when needed, and
+persistent data that survives updates.
+
+Manage installation, configuration, enable/disable state, logs, and updates from
+the Plugins page. These applications run outside the Repeater process, but they
+are not sandboxed: install only code and dependencies you trust. This system is
+separate from the built-in sensor modules that collect host telemetry.
+
+See [Plugins](/projects/openhop-repeater/plugins/) for the operator guide and
+[Plugin Development](/projects/openhop-repeater/plugin-development/) for packaging.
+
 ### Runtime policies
 
 Policies let the Repeater enforce network behavior instead of blindly forwarding everything. A policy can allow or drop matching traffic as the mesh grows.

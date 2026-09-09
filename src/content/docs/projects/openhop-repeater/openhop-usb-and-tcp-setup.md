@@ -18,7 +18,7 @@ Both modes keep the repeater in charge of node behavior, the dashboard, API, MQT
 
 The main config file is `/etc/openhop_repeater/config.yaml`.
 
-## openHop USB over USB serial
+## openHop Modem over USB serial
 
 Minimal config:
 
@@ -48,7 +48,14 @@ id repeater
 
 Make sure the service user can open the USB serial device.
 
-## openHop USB over TCP
+Prefer a stable host device name when available, and verify it after reconnects.
+In Docker, map the actual device and use the container-side path in `modem_usb.port`.
+Colon-containing ESP32-S3 by-id names cannot be used in short-form Docker device
+mappings; see [USB serial device names](/projects/openhop-repeater/docker/#usb-serial-device-names).
+In Proxmox LXC, passing `/dev/bus/usb` alone does not expose `/dev/ttyACM0`;
+the serial character device needs its own passthrough and permissions.
+
+## openHop Modem over TCP
 
 Minimal config:
 
@@ -77,6 +84,12 @@ Replace the placeholder with the modem LAN IP or its actual board-specific
 hostname, such as `heltec-v4-<mac3>.local`. The Repeater source template's
 `openhop-modem.local` value is only an example; current modem firmware generates
 board-specific names and some Ethernet targets do not advertise mDNS at all.
+
+The TCP token authenticates the modem connection but does not make it a TLS
+tunnel. Keep the modem protocol on a trusted LAN/VPN; do not expose port 5055
+directly to the internet. Modem HTTP diagnostics/GPS have their own host, port,
+and credentials under `sensors`/`gps`; setting the radio TCP block alone does not
+enable those optional pollers.
 
 ## Configure the backend
 

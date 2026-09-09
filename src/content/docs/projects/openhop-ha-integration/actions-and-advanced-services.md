@@ -18,6 +18,8 @@ Home Assistant labels these as actions. The compatibility service domain remains
 - `db_purge`
 - `update_radio_config`
 - `update_mqtt_config`
+- `send_advert`
+- `publish_neighbors` (schedule an MQTT neighbor-publication cycle)
 
 ## CAD calibration actions
 
@@ -47,6 +49,8 @@ Home Assistant labels these as actions. The compatibility service domain remains
 - `get_packet_by_hash`
 - `get_neighbor_links`
 - `get_neighbor_link_history`
+- `get_neighbor_scopes` (read stored scopes)
+- `query_neighbor_scopes` (query one zero-hop neighbor over RF)
 - `get_adverts_by_contact_type`
 - `get_adverts_count_by_contact_type`
 - `get_acl_clients`
@@ -54,6 +58,29 @@ Home Assistant labels these as actions. The compatibility service domain remains
 - `get_room_messages`
 - `get_room_clients`
 - `delete_room_message`
+
+## Current response and targeting options
+
+- `companion_request_status` and `companion_request_telemetry` accept optional
+  `response_variable` support. Calls without a requested response still work.
+  Returned backend dictionaries are unwrapped; other result shapes are wrapped
+  under `result`. Results do not enter normal polling or entity attributes.
+- `get_neighbor_link_history` accepts optional integer `bucket_seconds`, minimum
+  60. Omit it for the legacy raw `rows` response. Include it for `buckets`,
+  `bucket_seconds`, and bucket `count`; `limit` then caps buckets. The backend
+  must support bucketed history: there is no silent fallback to raw rows.
+- The raw `update_radio_config` payload supports `radio_id` for multi-radio
+  targeting and `direct_advert_interval_hours`. `update_mqtt_config` accepts the
+  backend's custom `base_topic` and neighbor-publisher settings.
+- Ping reply waits are bounded to 1–60 seconds; companion status/telemetry waits
+  to 1–120 seconds. HTTP budgets include a finite margin beyond the RF wait.
+  Explicit companion `sent: false` is surfaced as an action error, even inside a
+  successful response envelope; older responses omitting `sent` remain supported.
+
+Use **Developer tools → Actions** for required identifiers and current schemas.
+This tracks integration dev
+[`fc60f15` action registration](https://github.com/openhop-dev/openHop-HA-Integration/blob/fc60f15aed1473a65a0f4363cdb85b7c670736e8/custom_components/pymc_repeater/__init__.py)
+and [HTTP client](https://github.com/openhop-dev/openHop-HA-Integration/blob/fc60f15aed1473a65a0f4363cdb85b7c670736e8/custom_components/pymc_repeater/api.py).
 
 ## Multi-repeater setups
 

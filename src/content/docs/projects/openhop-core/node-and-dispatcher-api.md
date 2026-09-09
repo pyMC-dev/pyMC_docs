@@ -7,7 +7,7 @@ sidebar:
 
 This reference migrates the legacy `docs/docs/api/node.md` and
 `docs/docs/api/dispatcher.md` topics. It tracks openHop Core `dev` commit
-[`77f116a`](https://github.com/openhop-dev/openhop_core/tree/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/node).
+[`68272ce`](https://github.com/openhop-dev/openhop_core/tree/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/node).
 Current source and tests remain authoritative for exact signatures.
 
 ## MeshNode
@@ -63,6 +63,11 @@ ACK correlation is keyed by protocol CRC/hash behavior, not by application objec
 identity. Timeouts and cancellation must remove waiters so later packets cannot wake a
 stale request.
 
+`expect_ack(crc)` returns a per-waiter event. Independent waiters for the same
+CRC no longer share one resettable event: each matching waiter is signaled, and
+one caller timing out does not remove another caller's wait. TX serialization
+does not hold the radio lock throughout the subsequent ACK wait.
+
 `MeshNode.send_packet()` returns a boolean. The lower-level physical radio
 `send()` contract may return a metadata mapping on success and `None` on failure,
 but the dispatcher normalizes that result before returning to `MeshNode` callers.
@@ -70,6 +75,11 @@ With RF Fabric, `radio_id` can select an endpoint explicitly. Received packets
 are stamped with `_rx_radio_id`, while send metadata and logs identify the chosen
 default, policy-selected, or explicit endpoint. Sending does not automatically
 fan out through every configured radio.
+
+Ingress identity is captured at synchronous receive-callback entry, before packet
+work is scheduled or raw-RX subscribers are awaited. This keeps back-to-back
+receives attributed to their actual endpoints, including explicitly unknown
+ingress, instead of reading a later radio's mutable receive state.
 
 Login replies keep `admin_code` and ACL permissions separate. `admin_code=2`
 means a room-server plain guest, not admin; use `is_admin` or the ACL role helper
@@ -127,6 +137,19 @@ Handlers share callbacks, stores, identity material, and dispatcher injection po
 Replacing one handler can break ACKs, decryption, response correlation, learned paths,
 or forwarding.
 
+`TextMessageHandler` publishes `text`, `txt_type`, and `sender_timestamp` in
+`packet.decrypted`. The timestamp is the sender's clock, useful for application
+replay policy, not a trusted wall-clock measurement. CLI_COMMAND (`3`) is
+delivered to the application rather than executed by Core, and unsupported text
+types are dropped. Server owners may supply a side-effect-free
+`should_ack_fn(sender_pubkey, txt_type, sender_timestamp)` veto; an exception
+withholds the ACK rather than claiming acceptance.
+
+`LoginServerHandler` accepts optional `get_out_path` and `clear_out_path` ACL
+callbacks. A direct login can return directly over a valid stored path; absent
+or unusable stored paths fall back to a flood response. A successful flood login
+uses the PATH-return flow and asks the application to clear its stored path.
+
 ## Packet callbacks and subscribers
 
 The dispatcher exposes:
@@ -172,10 +195,10 @@ application-facing data, not serialized MeshCore packet formats.
 
 ## Exact source
 
-- [`node/node.py`](https://github.com/openhop-dev/openhop_core/blob/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/node/node.py)
-- [`node/dispatcher.py`](https://github.com/openhop-dev/openhop_core/blob/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/node/dispatcher.py)
-- [`node/events`](https://github.com/openhop-dev/openhop_core/tree/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/node/events)
-- [`node/handlers`](https://github.com/openhop-dev/openhop_core/tree/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/node/handlers)
+- [`node/node.py`](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/node/node.py)
+- [`node/dispatcher.py`](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/node/dispatcher.py)
+- [`node/events`](https://github.com/openhop-dev/openhop_core/tree/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/node/events)
+- [`node/handlers`](https://github.com/openhop-dev/openhop_core/tree/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/node/handlers)
 
 ## Related guides
 

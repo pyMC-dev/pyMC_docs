@@ -19,6 +19,9 @@ setting at a time, and observe the dashboard and logs over comparable traffic.
 - Disable unused sensors, GPS sources, MQTT brokers, Glass, room servers, and
   companion identities.
 - Disable `sensors.auto_install_packages` on controlled systems.
+- Disable unused external plugins separately; sensor package auto-install and the
+  plugin manager are different systems. Plugin installs/venv rebuilds can consume
+  CPU, disk, and network bandwidth, so schedule them outside RF troubleshooting.
 
 ## Packet and mesh controls
 
@@ -44,6 +47,12 @@ For a CAD-capable backend, follow [CAD Calibration](/projects/openhop-repeater/c
 after the radio and modulation settings are known to receive normal traffic. A
 calibrated clear/busy decision reduces unnecessary LBT backoff without making
 the radio ignore real compatible channel activity.
+
+Flood/direct delay factors under `delays` are airtime multipliers, not seconds:
+the pre-transmit delay is randomized from zero to five times packet airtime times
+the configured factor. For KISS, also inspect firmware key-up and CSMA delays;
+see [KISS timing](/projects/openhop-repeater/kiss-setup/#optional-kiss-timing).
+Do not disable carrier sensing or legal duty-cycle controls simply to reduce delay.
 
 ## Storage and charts
 

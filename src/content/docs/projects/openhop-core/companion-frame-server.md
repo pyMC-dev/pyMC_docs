@@ -10,7 +10,7 @@ companion clients over TCP. It wraps an existing `CompanionBridge`; it does not 
 or own a second radio.
 
 This guide tracks openHop Core `dev` commit
-[`77f116a`](https://github.com/openhop-dev/openhop_core/tree/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/companion/frame_server).
+[`68272ce`](https://github.com/openhop-dev/openhop_core/tree/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/companion/frame_server).
 
 ## When to use it
 
@@ -100,7 +100,7 @@ The current command registry covers:
   frequencies.
 
 Exact command constants and payload encodings are defined in the pinned
-[`companion constants`](https://github.com/openhop-dev/openhop_core/blob/77f116a8dab097642d04a16c8aaf097c0dd33cc3/src/openhop_core/companion/constants.py)
+[`companion constants`](https://github.com/openhop-dev/openhop_core/blob/68272cec2a1312de92c7ec0df529b195d4563575/src/openhop_core/companion/constants.py)
 and command modules. Treat those bytes as a protocol contract; do not derive wire
 formats from this prose alone.
 
@@ -122,6 +122,12 @@ client, including:
 Host code can also push trace or raw receive data through the synchronous scheduling
 helpers or their asynchronous counterparts. Avoid pushing the same packet through
 both host and bridge paths; doubled input becomes doubled client output.
+
+Frame-server reconnect and shutdown remove only the frame server's own bridge
+subscriptions. Other application or plugin subscribers remain registered. If
+your host also uses companion push callbacks, remove its callbacks individually
+rather than calling the companion-wide `clear_push_callbacks()` during a client
+disconnect.
 
 ## Persistence hooks
 

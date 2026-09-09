@@ -39,6 +39,15 @@ INA219 telemetry. RAK4631 responses redact the TCP token and expose only whether
 one is set; GPS fields are unavailable unless serial GPS support was compiled and
 configured.
 
+Station G3 `/api/stats` also exposes top-level `bus_voltage_v`, `current_ma`, and
+`power_mw` from its INA219 input-power monitor. The `system` object (and
+`/api/system`) has board-specific readings including
+`station_g3_input_voltage_v`, `station_g3_current_ma`, `station_g3_power_w`,
+minimum input voltage, and maximum current. Note the different power units:
+`power_mw` is milliwatts, while `station_g3_power_w` is watts. Missing or failed
+monitor readings are `null`, not measured zero. These are input-power readings,
+not a battery-percentage estimate.
+
 ## Write endpoints
 
 | Method | Path | Purpose |
@@ -51,6 +60,19 @@ A successful configuration save schedules a reboot where required. The RAK
 `/dfu/ble` action only enters the installed bootloader: it does not upload a
 firmware image and does not create an ESP-style `/update` endpoint. Use the
 matching `firmware.zip` with the supported nRF52 DFU workflow.
+
+### Wi-Fi power-save configuration
+
+On Wi-Fi-capable boards, `GET /api/config` includes `wifi_power_save` (default
+`true`). `POST /api/config` accepts a boolean of the same name; `false` disables
+Wi-Fi modem sleep for lower latency at higher power draw. The change applies
+after the post-save reboot. Non-Wi-Fi variants do not expose the setting and
+reject unsupported configuration fields rather than enabling Wi-Fi.
+
+These fields follow Modem dev
+[`b95a809`](https://github.com/openhop-dev/openhop_modem/blob/b95a809e6ae37260dc146d59d25f63132962f63f/API.md).
+Use the installed firmware's capabilities rather than assuming every published
+board image has the latest source features.
 
 ## API and packet transport are independent
 

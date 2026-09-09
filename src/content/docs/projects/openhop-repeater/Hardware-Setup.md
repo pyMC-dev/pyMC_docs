@@ -22,6 +22,7 @@ The repo currently includes named radio presets for families such as:
 - PiMesh 1W variants
 - Frequency Labs `meshadv-mini` and `meshadv`
 - Zebra and Zebra Duo HAT variants
+- NebraHat and NebraDuo variants
 - Femtofox 1W/2W
 - PineDio
 - RAK6421/RAK13300 slot variants
@@ -94,6 +95,9 @@ When `radio_type: sx1262_ch341` is selected:
 - `sx1262` pin values are CH341 GPIO numbers `0-7`
 - the adapter VID/PID is configured under `ch341:`
 - host USB permissions matter more than SPI kernel overlays
+- with multiple adapters, set `ch341.bus` and `ch341.address`, and/or
+  `ch341.serial_number` when the adapter exposes one; VID/PID alone cannot
+  distinguish identical devices. Recheck USB addresses after reconnects.
 
 ```yaml
 radio_type: sx1262_ch341
@@ -166,6 +170,29 @@ modem_tcp:
 
 If you do not have RF hardware on this host at all, use `radio_type: null` and skip modem sections entirely.
 
+## Multiple radios
+
+A nonempty top-level `radios:` list builds an RF Fabric stack instead of the
+legacy single-radio configuration. Each entry needs a unique `id`, its backend,
+air settings, and hardware/transport settings. This requires Core with RF Fabric
+support. See the commented multi-radio examples in the
+[canonical config](https://github.com/openhop-dev/openhop_repeater/blob/dev/config.yaml.example).
+
+- Give native radios distinct chip-select/control pins and CH341 radios distinct
+  USB selectors; do not let two entries open the same hardware.
+- Omitted sections inherit the top-level section. An entry's `radio`, `sx1262`,
+  or transport block **replaces** that whole section rather than deep-merging
+  individual fields; provide a complete block when overriding it.
+- Configure `fabric.default_radio` and `fabric.tx_mode` deliberately. `default`
+  uses the default radio, `sticky` uses the last receiving radio, and `bridge`
+  selects another radio (intended for a two-radio backhaul, not broadcast-to-all).
+- `fabric.use_fabric: true` can wrap a single radio too. Put this key under
+  `fabric`, not inside the `radios` sequence.
+- Back up and edit YAML deliberately, restart, and check each radio's startup.
+  The legacy helper is not a multi-radio editor. To isolate software without RF,
+  remove the active `radios` list from the diagnostic config as well as selecting
+  top-level `radio_type: null`.
+
 ## Board-specific notes
 
 ### uConsole
@@ -215,17 +242,19 @@ If the hardware setup is wrong, this is the first place to look.
 
 ## Radio configuration helper
 
-The standard install flow launches the terminal helper automatically. It handles
-direct SX1262 presets and KISS only:
+The standard install directs you to browser onboarding. The optional legacy
+terminal helper offers SX1262 presets (including CH341) and KISS:
 
 ```bash
 sudo bash setup-radio-config.sh /etc/openhop_repeater
 ```
 
-Use it to apply a current direct-SX1262 hardware preset or write KISS serial
-settings. After onboarding, configure `sx1262_ch341`, `modem_usb`, `modem_tcp`,
-and `null` through **System → Configuration → Radio → Radio Hardware** or by
-editing the config directly, then restart Repeater.
+Use it to apply an SX1262/CH341 preset or write KISS serial settings. Its text
+substitutions can also affect unrelated same-named keys; back up first and check
+GPS/HTTP ports and board-specific fields afterward. Prefer the browser for normal
+reconfiguration. After onboarding, configure `modem_usb`, `modem_tcp`, and `null`
+through **System → Configuration → Radio → Radio Hardware** or by editing the
+config directly, then restart Repeater.
 
 ## Related pages
 
