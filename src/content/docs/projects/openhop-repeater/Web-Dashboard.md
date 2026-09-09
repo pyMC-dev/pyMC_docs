@@ -78,8 +78,10 @@ Repeater. An HTTP `504` with `outcome: unknown` is not cancellation: an install
 may still finish. Refresh status before retrying.
 
 Plugins are trusted code, not sandboxed extensions. Follow
-[Plugins](/projects/openhop-repeater/plugins/) for manager provisioning, catalogue
-trust, data backups, and configuration; package authors should use
+[Plugins](/projects/openhop-repeater/plugins/) for a step-by-step dashboard walkthrough
+covering catalogue installation, the Config gear, Open UI, updates, and removal.
+For host setup and API automation, use
+[Advanced Plugin Administration](/projects/openhop-repeater/plugin-administration/); package authors should use
 [Plugin Development](/projects/openhop-repeater/plugin-development/).
 
 ## Maps

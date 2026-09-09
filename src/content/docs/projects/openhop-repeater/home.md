@@ -43,7 +43,8 @@ a longer task-oriented index without creating a second project home page.
 
 ## Plugins
 
-- [Install and manage plugins](/projects/openhop-repeater/plugins/)
+- [Install and manage plugins in the dashboard](/projects/openhop-repeater/plugins/)
+- [Advanced administration and API automation](/projects/openhop-repeater/plugin-administration/)
 - [Build and package a plugin](/projects/openhop-repeater/plugin-development/)
 - [Plugin API and the rest of the REST contract](/projects/openhop-repeater/api-reference/)
 - [Authentication and plugin trust](/projects/openhop-repeater/security-and-authentication/)

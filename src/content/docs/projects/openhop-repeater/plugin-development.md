@@ -363,7 +363,8 @@ assert client.status("example.heartbeat")["state"] == "DISABLED"
 ```
 
 This is a source-level test aid, not the public SDK. For end-to-end acceptance,
-use the authenticated HTTP upload/settings/lifecycle calls in [Plugins](/projects/openhop-repeater/plugins/)
+use the authenticated HTTP upload/settings/lifecycle calls in
+[Advanced Plugin Administration](/projects/openhop-repeater/plugin-administration/)
 on an isolated Repeater instance. Use temporary config/storage and a null radio
 for tests that do not require hardware; normal startup can generate identities
 and secrets or connect/transmit when real hardware/config is selected.
