@@ -51,6 +51,39 @@ The add-on uses host networking, so the dashboard and any companion/room-server
 listeners bind directly on the Home Assistant host. Avoid running both channels
 at the same time unless every listener port is deliberately separated.
 
+## Plugin-manager startup and upgrades
+
+The current upstream add-on wrapper launches
+`repeater.plugins.container_supervisor` when that module exists in the packaged
+Repeater image. The supervisor starts both Repeater and its separate application
+plugin manager, restarts a failed manager while Repeater remains running, and
+forwards shutdown signals to both process groups. The add-on's outer wrapper
+preserves bounded clean-restart handling.
+
+Older channel images without the supervisor module fall back to `repeater.main`.
+An installed supervisor failing to start is an error, not a reason to silently
+disable plugin support. Main and Dev can contain different Repeater capabilities.
+
+If the dashboard loads but reports **plugin manager unavailable** after an
+upgrade:
+
+1. Update the Home Assistant add-on itself, not just Repeater code inside it.
+   Older wrappers launched only `repeater.main` and bypassed the image's plugin
+   manager startup.
+2. Check the add-on log for
+   `using runtime repeater.plugins.container_supervisor` and
+   `Starting plugin manager`. A web page loading alone does not prove plugin IPC
+   is available.
+3. Check whether `plugins.enabled: false` intentionally disables the manager.
+4. Confirm the runtime data path is persistent and writable; see
+   [Host Access and Storage](/projects/openhop-ha-addon/host-access/).
+
+This behavior is source-verified in the upstream wrapper at
+[`5fad1c0`](https://github.com/openhop-dev/openHop-HA-Add-on/blob/5fad1c09d6881d036093c72f716c9d2fab54d36b/openhop_repeater_dev/run.sh)
+(shared by both channels) and Repeater dev's
+[`container supervisor`](https://github.com/openhop-dev/openhop_repeater/blob/ffd239dd826e2c0b3185ba8358f9a4f9cb530aba/repeater/plugins/container_supervisor.py).
+Mutable image tags and installed add-on versions must still be checked separately.
+
 ## Backups and channel changes
 
 Both manifests request cold Home Assistant backups. Before uninstalling, changing

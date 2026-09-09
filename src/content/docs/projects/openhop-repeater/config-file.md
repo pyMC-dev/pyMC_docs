@@ -7,7 +7,14 @@ sidebar:
 
 Reference for configuring openHop Repeater using `config.yaml`, installed at
 `/etc/openhop_repeater/config.yaml`. The authoritative, commented schema is
-`config.yaml.example` in the Repeater repository's `dev` branch.
+`config.yaml.example` in the Repeater repository's `dev` branch, together with
+the runtime configuration readers (some optional settings are only defaulted in
+code). This page describes the current development implementation.
+
+Use the dashboard/API for normal configuration changes. Back up configuration
+and identity/state first, check the save result, and distinguish saved settings
+from settings actually applied live. Do not edit the file concurrently with a
+dashboard save.
 
 ## Table of Contents
 
@@ -19,6 +26,7 @@ Reference for configuring openHop Repeater using `config.yaml`, installed at
 - [Sensors](#sensors)
 - [Mesh](#mesh)
 - [Identities](#identities)
+- [Multi-radio and RF Fabric](#multi-radio-and-rf-fabric)
 - [Radio Backend Selection](#radio-backend-selection)
 - [CH341 USB-SPI](#ch341-usb-spi)
 - [Radio Parameters](#radio-parameters)
@@ -26,6 +34,7 @@ Reference for configuring openHop Repeater using `config.yaml`, installed at
 - [Delays](#delays)
 - [Duty Cycle](#duty-cycle)
 - [Storage](#storage)
+- [Plugins](#plugins)
 - [MQTT Brokers](#mqtt-brokers)
 - [openHop Glass](#openhop-glass)
 - [Logging](#logging)
@@ -55,11 +64,17 @@ Manual coordinates used when you are not advertising a live GPS fix.
 
 ### `repeater.identity_file`
 
-Path to the local node identity file. If omitted, a new identity is generated on first run.
+Path to the local node identity file. Use an absolute path. If omitted and
+`identity_key` is absent, Repeater checks the existing system identity and then
+the service account's XDG/home location, creating a key if necessary. See
+[Identity Management](/projects/openhop-repeater/identity-management/) for the
+exact fallback and recovery behavior.
 
 ### `repeater.identity_key`
 
-Optional inline private key. If both `identity_key` and `identity_file` are set, `identity_key` wins.
+Optional inline private key. If both `identity_key` and `identity_file` are set,
+`identity_key` wins. Omit this field entirely to load from a file: even an
+explicit `identity_key: null` bypasses the file-loading branch.
 
 ### `repeater.owner_info`
 
@@ -164,11 +179,13 @@ Full-access password for the web UI and API.
 
 ### `repeater.security.guest_password`
 
-Guest password for restricted access.
+Guest password for MeshCore mesh-client access. It is **not** a dashboard guest
+login; the current web login accepts username `admin` and the admin password.
 
 ### `repeater.security.allow_read_only`
 
-Allow unauthenticated or ACL-missing clients to view read-only data.
+Allow read-only MeshCore mesh-client access without a password/ACL entry. This
+does **not** disable HTTP API authentication or create an anonymous dashboard.
 
 ### `repeater.security.jwt_secret`
 
@@ -176,7 +193,10 @@ JWT signing secret. Leave empty to auto-generate.
 
 ### `repeater.security.jwt_expiry_minutes`
 
-Session lifetime before re-authentication is required.
+Lifetime of each JWT in minutes (default `60`). Authenticated clients can refresh
+a valid session; expiry is not necessarily a fixed maximum browser-session age.
+See [Security and Authentication](/projects/openhop-repeater/security-and-authentication/)
+for the distinction between mesh credentials, web sessions, and API tokens.
 
 ## Policy
 
@@ -309,6 +329,12 @@ Key fields:
 - `auto_install_packages`
 - `definitions`
 
+The example enables automatic dependency installation. Disable
+`auto_install_packages` globally and on individual definitions for controlled,
+offline, or immutable deployments; enabled sensors can otherwise invoke pip.
+These in-process sensor modules are distinct from external
+[Plugins](#plugins).
+
 ### `sensors.definitions`
 
 Each entry defines one sensor instance.
@@ -393,9 +419,11 @@ Loop detection mode:
 
 ### `mesh.default_region`
 
-Optional default transport-key region for locally originated flood adverts.
-Leave it `null` for unscoped floods. Region names and keys are security-sensitive;
-manage them through the dashboard/API and do not publish key material.
+Optional default transport-key region for locally originated flood adverts and
+the default scope of flood replies whose request scope is unknown. A reply to a
+matched served region can instead inherit that region. Leave it `null` for no
+default scope. See [Transport Keys](/projects/openhop-repeater/transport-keys/)
+for public name-derived regions versus private key material.
 
 ## Identities
 
@@ -627,17 +655,30 @@ Notes:
 
 ## Delays
 
-Transmission timing multipliers live under `delays:`.
+Transmission timing multipliers live under `delays:`. They are airtime
+multipliers, **not seconds**: the initial randomized TX window is zero through
+`5 × packet_airtime × factor`. Scoring and other scheduling controls can further
+affect when a queued packet transmits.
 
 ```yaml
 delays:
   tx_delay_factor: 1.0
   direct_tx_delay_factor: 0.5
+  rx_delay_base: 0.0
 ```
+
+`rx_delay_base` is the separate flood reception-quality delay control. `0.0`
+keeps flood processing immediate. It is passed to the Core dispatcher at
+startup and applied live when the `delays` section changes. Mesh CLI
+`get rxdelay` / `set rxdelay` uses this same setting; the setter accepts `0`
+through `20`. It is not the TX delay multiplier or a fixed sleep in seconds.
 
 ## Duty Cycle
 
 Duty cycle enforcement is configured under `duty_cycle:`.
+`max_airtime_per_minute` is measured in **milliseconds per minute**, not seconds.
+The example leaves enforcement disabled; operators must still comply with their
+local RF regulations.
 
 ```yaml
 duty_cycle:
@@ -663,6 +704,41 @@ journal uses its independent `companion_events_days` retention period.
 The daemon stores runtime data under `storage.storage_dir`. The default install
 keeps the main config at `/etc/openhop_repeater/config.yaml` and state data under
 `/var/lib/openhop_repeater`. The old top-level `storage_dir` form is deprecated.
+
+## Plugins
+
+External application plugins are managed by a separate process, not loaded as
+Python extensions into the Repeater daemon. The optional top-level block is:
+
+```yaml
+plugins:
+  enabled: true
+  # root: "/var/lib/openhop_repeater/plugins"
+  # socket: "/var/lib/openhop_repeater/plugin-manager.sock"
+  # catalogue_url: "https://repeater-plugins.openhop.dev/catalogue.json"
+```
+
+- `enabled` defaults to enabled when omitted. Explicit YAML `false` prevents
+  manager startup; it is not a live per-plugin stop command. Use the plugin
+  dashboard lifecycle controls for individual plugins.
+- `root` defaults to `plugins/` under `storage.storage_dir`.
+- `socket` defaults to `plugin-manager.sock` under that storage directory.
+  Repeater and the manager must resolve the same socket.
+- `catalogue_url` overrides the curated catalogue endpoint and must use HTTPS.
+  Changing it changes which catalogue authority you trust.
+- Compatibility aliases are `plugins_dir`, `socket_path`, and `catalogue`;
+  prefer the names above. Use absolute override paths: explicit relative plugin
+  root/socket paths resolve from the process working directory.
+
+Plugin application settings live in the plugin's persistent data directory, not
+as arbitrary fields in this block. A missing manager causes plugin API requests
+to return HTTP `503`; normal Repeater operation does not depend on it. Docker
+also supports `OPENHOP_PLUGIN_MANAGER=0` to omit the manager.
+
+Read [Plugins](/projects/openhop-repeater/plugins/) for installation, upgrades,
+settings and recovery, and [Plugin Development](/projects/openhop-repeater/plugin-development/)
+for the package contract. Plugins and their dependencies are trusted code, not
+sandboxed applications.
 
 ## MQTT Brokers
 
@@ -801,18 +877,22 @@ address, port, and worker settings belong under `http:`, not `web:`.
 ```yaml
 web:
   cors_enabled: false
-  carto_api_key: ""
+  site_name: ""
   # web_path: null
 ```
 
 Key fields:
 
 - `cors_enabled`
-- `carto_api_key`: optional CARTO Basemaps browser key for theme-matched light and
-  dark tiles. The browser sends it directly to CARTO, so do not treat it as a
-  server-side secret. When unset, the UI uses light OpenStreetMap tiles in both
-  themes.
-- `web_path`
+- `site_name`: optional browser UI display name.
+- `web_path`: optional alternate frontend selection/path.
+
+The current standalone RepeaterUI uses keyless maps: OpenStreetMap raster tiles
+in light mode and OpenFreeMap dark vector tiles in dark mode, with raster
+fallback if vector rendering fails. The backend still preserves
+`web.carto_api_key` for compatibility with older frontends, but the current UI
+does not use or offer that setting. Map tiles are fetched by the browser from
+external providers; an offline Repeater does not imply offline basemaps.
 
 ## Examples
 
@@ -944,3 +1024,11 @@ sx1262:
 - Legacy `/etc/pymc_repeater` and `/var/lib/pymc_repeater` installations are
   migrated by the current management script; new documentation and installs use
   the openHop paths.
+
+## Implementation references
+
+- [Commented configuration](https://github.com/openhop-dev/openhop_repeater/blob/ffd239d/config.yaml.example)
+- [Plugin path and catalogue defaults](https://github.com/openhop-dev/openhop_repeater/blob/ffd239d/repeater/plugins/storage.py)
+- [Live-update regression coverage](https://github.com/openhop-dev/openhop_repeater/blob/ffd239d/tests/test_flood_rx_delay_wiring.py)
+- [RepeaterUI navigation](https://github.com/openhop-dev/openHop_RepeaterUI/blob/f1a5fb5/src/config/navigation.ts)
+- [Keyless map implementation](https://github.com/openhop-dev/openHop_RepeaterUI/blob/f1a5fb5/src/utils/mapTiles.ts)

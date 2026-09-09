@@ -98,7 +98,8 @@ After confirmation, the installer:
 6. Clones the selected Repeater branch to `/root/openhop-repeater`.
 7. Installs `/usr/local/bin/openhop-update` and the short `update` alias.
 8. Pre-seeds `/etc/openhop_repeater/config.yaml` with the CH341/E22 radio mapping.
-9. Runs the normal interactive `manage.sh install` flow.
+9. Runs `manage.sh install`, provisioning Repeater and its plugin-manager unit;
+   radio onboarding is completed in the browser afterward.
 10. Optionally installs openHop Console assets without selecting them as the
     active frontend.
 11. Adds Proxmox container notes and prints the dashboard URL.
@@ -131,9 +132,12 @@ modem's reachable LAN address, TCP port, and token if configured.
 
 ### openHop Modem over USB
 
-Leave the CH341 udev rule disabled. The installer already passes `/dev/bus/usb`
-into the LXC. During Repeater setup, select `modem_usb` and use the modem's device
-path inside the container.
+Leave the CH341 udev rule disabled. The installer passes `/dev/bus/usb`, but that
+alone does **not** expose the USB serial `/dev/ttyACM*` or `/dev/ttyUSB*` node.
+Configure serial-device passthrough on the Proxmox host for the actual device,
+allow its character-device major/minor in the LXC configuration, and verify the
+`repeater` user can open its container-side path before selecting `modem_usb`.
+See the diagnostic example below; the installer does not add these serial rules.
 
 :::caution
 The installer currently pre-seeds the configuration for CH341 regardless of the
@@ -187,12 +191,24 @@ The helper prints its planned actions and requires a `y/N` confirmation. It then
 It aborts instead of discarding local changes, switching a detached checkout, or
 merging divergent history.
 
+Back up container config, identities, data, and any custom plugin root before
+updating. The current `manage.sh upgrade` also refreshes the privileged OTA helper
+and provisions/restarts the plugin manager. Existing hosts need this administrator
+upgrade once before relying on the updated dashboard updater. Check
+`systemctl status openhop-repeater openhop-plugin-manager` and actual dashboard
+readiness afterward; `plugins.enabled: false` intentionally skips the manager.
+
 ## Optional openHop Console
 
 When selected, the installer clones the public Console distribution repository to
 `/root/pymc_console` and installs its current release assets. It deliberately does
 not make Console the active frontend. Complete the standard Repeater setup wizard
 first, then select **openHop Console** from Web Settings if wanted.
+
+This LXC script still offers the legacy standalone Console install/update path.
+It is separate from the new plugin catalogue and from current Docker images,
+which no longer bundle Console. Do not assume an LXC `update` upgrades a
+catalogue-installed plugin; manage that plugin through Plugins instead.
 
 ## Troubleshooting
 
@@ -229,6 +245,21 @@ Verify these lines exist in `/etc/pve/lxc/<CTID>.conf`:
 lxc.cgroup2.devices.allow: c 189:* rwm
 lxc.mount.entry: /dev/bus/usb dev/bus/usb none bind,optional,create=dir 0 0
 ```
+
+Those lines grant USB-bus access (for example CH341), not serial-device access.
+For a USB modem, identify the actual node on the host with `ls -l /dev/ttyACM0`.
+If it is specifically `/dev/ttyACM0` with major/minor `166, 0`, a device-specific
+configuration example is:
+
+```text
+lxc.cgroup2.devices.allow: c 166:0 rwm
+lxc.mount.entry: /dev/ttyACM0 dev/ttyACM0 none bind,optional,create=file 0 0
+```
+
+Do not copy those numbers for a different node: USB serial drivers can use
+different majors/minors. Apply the host configuration in a maintenance window,
+restart the LXC, and verify the device and permissions inside it. Recheck after
+USB reconnects. Prefer TCP mode when reliable serial passthrough is unavailable.
 
 ### Repeater starts with the wrong backend
 

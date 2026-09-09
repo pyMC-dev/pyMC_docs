@@ -19,21 +19,31 @@ repeater:
   # identity_key: null
 ```
 
-If neither an inline key nor a usable file is provided, Repeater loads or creates
-a MeshCore-compatible identity. A native system install prefers:
+When `identity_key` is absent, Repeater loads or creates a MeshCore-compatible
+identity using `identity_file` when set. Without an explicit path it uses this
+system identity **only if the file already exists**:
 
 ```text
 /etc/openhop_repeater/identity.key
 ```
 
-The generated file contains a base64-encoded private scalar and is written with
-mode `0600`. For non-system development runs, the fallback follows
+The generated file contains a base64-encoded 32-byte private scalar and is
+written with mode `0600`; loading also accepts a decoded 64-byte key. When the
+system file does not exist, the fallback follows
 `XDG_CONFIG_HOME/openhop_repeater/identity.key` or
 `~/.config/openhop_repeater/identity.key`.
 
 `repeater.identity_key` takes precedence over `repeater.identity_file`. An inline
 key makes the whole config secret, so a separate protected identity file is
-usually easier to back up and handle safely.
+usually easier to back up and handle safely. Omit `identity_key` when using a
+file: an explicitly present `identity_key: null` still bypasses automatic file
+loading in the current config reader. Set an explicit absolute `identity_file`
+to avoid relying on the service account's home directory.
+
+A missing or unreadable/invalid identity file can cause generation of a new
+identity; a failed save is logged but the generated key can remain in memory.
+If startup reports either condition on an existing node, stop and recover the
+original key rather than repeatedly restarting and advertising a new identity.
 
 ## First-run behavior
 
@@ -53,17 +63,21 @@ MeshCore firmware private key and updating a config. Run it only on a trusted
 host from a reviewed checkout, and avoid placing a real key in shell history,
 terminal recordings, or process-monitoring output.
 
-Back up the current identity and config first. The helper can target the current
-config path:
+Back up the current identity and config first. The helper requires a 64-byte
+firmware private key (128 hexadecimal characters) as its first argument and
+accepts an optional config path (default `/etc/openhop_repeater/config.yaml`).
+`--output-format=yaml` is the default and embeds binary key material in the
+config. `--output-format=identity` writes the fixed system path
+`/etc/openhop_repeater/identity.key`; it is not a custom key-path argument.
+Check for an inline `identity_key` override before expecting that file to be used.
 
-```bash
-sudo ./convert_firmware_key.sh '<private-key>' /etc/openhop_repeater/config.yaml
-sudo systemctl restart openhop-repeater
-```
+**Its argument-based interface can expose the key in process listings even when
+shell history is disabled.** Do not run it in a shared or recorded shell, and do
+not copy a real key into a support command. Use only a trusted administrative
+environment; the current helper does not offer a documented hidden-input mode.
 
-The placeholder is intentionally not a real key. Prefer an input method that does
-not persist secrets in history. Confirm the public identity after restart before
-deleting the old backup.
+Restart only after reviewing the changed configuration securely. Confirm the
+public identity after restart before deleting the old backup.
 
 ## Room-server and companion identities
 
@@ -87,6 +101,15 @@ The dashboard and authenticated API expose identity operations. Creating,
 updating, deleting, or importing an identity changes persistent state and may
 affect clients, contacts, queues, and advertised identity. Export a backup before
 destructive changes.
+
+## Plugins and identity access
+
+Installing an external [Plugin](/projects/openhop-repeater/plugins/) does not
+automatically create a MeshCore identity. Configure any required companion or
+room-server identity explicitly, following the application's instructions.
+Plugin settings and persistent data are separate from the primary identity
+file. Plugins run with service-account access, not in a security sandbox: trust
+them before granting credentials or access to hosted identities.
 
 ## Permissions and backups
 
@@ -128,3 +151,8 @@ logs are sufficient for most identity investigations.
 See [First Boot](/projects/openhop-repeater/first-boot/),
 [Configuration Reference](/projects/openhop-repeater/config-file/), and
 [Web Dashboard](/projects/openhop-repeater/web-dashboard/).
+
+## Implementation references
+
+- [Identity config loading](https://github.com/openhop-dev/openhop_repeater/blob/ffd239d/repeater/config.py)
+- [Identity collision regression tests](https://github.com/openhop-dev/openhop_repeater/blob/ffd239d/tests/test_identity_collision_preflight.py)

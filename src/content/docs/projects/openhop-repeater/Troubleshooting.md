@@ -65,6 +65,10 @@ and dashboard then start, focus on the radio backend, device access, or wiring.
 For a receive-only investigation with initialized hardware, use
 `repeater.mode: no_tx`.
 
+If `radios:` contains entries, remove that list from the diagnostic copy too:
+it takes precedence for radio construction, so top-level `radio_type: null` alone
+does not disable it. `monitor` disables forwarding, not every source of TX.
+
 ## Direct SX1262 problems
 
 Verify all of the following against the exact board revision:
@@ -90,6 +94,19 @@ Repeater host. A network ping alone does not prove the modem protocol port is
 reachable. For `modem_usb`, verify the USB serial device path after reconnects.
 Prefer `/dev/serial/by-id/...` when available; otherwise re-check the current
 `/dev/ttyACM*` or `/dev/ttyUSB*` assignment.
+
+Docker short-form mappings cannot accept colon-containing ESP32-S3 by-id names.
+Use a matching host udev rule for a colon-free name such as `/dev/openhop-modem`,
+map it under `devices:`, and use the container path in config. A read-only
+`/dev:/host/dev:ro` discovery mount alone does not grant access. For Proxmox,
+USB-bus passthrough does not create serial-device passthrough; see
+[Docker](/projects/openhop-repeater/docker/#usb-serial-device-names) and
+[LXC diagnostics](/projects/openhop-repeater/proxmox-lxc/#usb-is-unavailable-inside-the-lxc).
+
+After running the legacy terminal setup helper, also check unrelated HTTP/GPS
+ports: its text-based substitutions can change same-named YAML keys. KISS uses
+`baud_rate`; openHop USB uses `baudrate`. For unexpected KISS transmit latency,
+check [firmware timing](/projects/openhop-repeater/kiss-setup/#optional-kiss-timing).
 
 Then compare frequency, bandwidth, spreading factor, coding rate, preamble, sync,
 LBT, and power with the modem and the mesh.
@@ -171,6 +188,50 @@ the old service. If an upgrade fails:
 
 Docker installations are upgraded by pulling and recreating the container, not
 through the dashboard updater.
+
+Before re-running a native upgrade, update the intended clean checkout with a
+fast-forward pull; `manage.sh` installs the local tree rather than pulling it.
+Existing hosts need one administrator-run updated `manage.sh upgrade` to refresh
+the privileged `/usr/local/bin/pymc-do-upgrade` helper. A wheel-only install or
+the old web updater does not accomplish that. A writable/non-root-owned execution
+tree rejection requires administrator repair from trusted packages, not loosening
+permissions or making the main venv writable by `repeater`.
+
+If a Docker upgrade breaks only the frontend, check for the removed legacy
+`web.web_path: /opt/pymc_console/web/html`. Switch back to default RepeaterUI;
+current images obtain optional Console functionality through the plugin catalogue.
+For a local build, Git pull/restart alone is insufficient: rebuild the image with
+the matching verified frontend assets.
+
+## Plugins unavailable or failing
+
+For native installs:
+
+```bash
+sudo systemctl status openhop-plugin-manager
+sudo journalctl -u openhop-plugin-manager -n 100 --no-pager
+```
+
+- HTTP 503 from plugin operations usually means the manager/socket is unavailable;
+  normal Repeater service can remain healthy. Check both processes use the same
+  config, `plugins.root`, and `plugins.socket`; the default socket is
+  `/var/lib/openhop_repeater/plugin-manager.sock`.
+- `plugins.enabled: false` intentionally skips native unit startup. In Docker,
+  `OPENHOP_PLUGIN_MANAGER=0` also disables it. Check container logs, not systemd.
+  The supervisor restarts a crashed manager while Repeater remains running.
+- If the native unit is missing, run the current managed upgrade as administrator;
+  do not run the manager as root to work around provisioning or permissions.
+- Check plugin state, settings, and logs separately from daemon logs. Five
+  unexpected exits in 60 seconds trigger the plugin crash-loop limit and `FAILED`.
+- After an image Python-version change, retained wheels allow plugin venv rebuilds.
+  Missing wheels, unreachable dependency indexes, incompatible packages, or an
+  unwritable plugin root can block recovery. Keep plugin data and repair the
+  specific installation rather than deleting the entire data volume.
+- HTTP 504 with `outcome: unknown` after an install means completion is ambiguous,
+  not cancelled. Inspect installed status before retrying a mutation.
+
+Plugin logs/settings can contain credentials. Redact them before sharing; plugins
+and their pip dependencies are trusted code, not sandboxed workloads.
 
 ## Collect a safe support bundle
 

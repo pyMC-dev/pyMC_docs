@@ -19,6 +19,20 @@ The service should be active without repeated restarts. The log should show the
 selected radio backend, loaded identity, HTTP listener, and any optional services.
 Resolve device, permission, config, or bind errors before continuing.
 
+Native installs also provision `openhop-plugin-manager`. Check it separately:
+
+```bash
+sudo systemctl status openhop-plugin-manager
+sudo journalctl -u openhop-plugin-manager -n 50 --no-pager
+```
+
+The manager starts by default; `plugins.enabled: false` intentionally skips
+startup. A missing/stopped manager leaves Repeater usable but plugin operations
+unavailable. For Docker, inspect container logs instead of running systemd inside
+the container. Installing a Python package alone does not provision native units
+or refresh an older privileged upgrade helper; see
+[Installation](/projects/openhop-repeater/installation/#upgrading-a-native-installation).
+
 ## 2. Open onboarding
 
 Visit the setup route directly:
@@ -47,6 +61,10 @@ Check the top-level `radio_type` in the config:
 - `modem_usb` or `modem_tcp` for openHop Modem transports;
 - `null` for setup, dashboard, API, or companion-only use without RF.
 
+If a nonempty `radios:` list is configured, inspect every entry instead: it builds
+the active multi-radio stack. Changing only the top-level `radio_type` to `null`
+does not disable those radios. See [Hardware Setup](/projects/openhop-repeater/hardware-setup/#multiple-radios).
+
 For a new or uncertain setup, start in `repeater.mode: no_tx` or use
 `radio_type: null`. Before enabling transmit, verify the antenna, board revision,
 GPIO domain, RF switch/TCXO requirements, frequency, bandwidth, spreading factor,
@@ -64,6 +82,12 @@ The default install uses:
 If no identity was configured, first startup creates one. Back it up securely
 after onboarding. Losing it changes the node's mesh identity; exposing it allows
 another system to impersonate the node.
+
+Include plugin state in backups: the default root is
+`/var/lib/openhop_repeater/plugins`, including retained wheels, plugin settings,
+data, and logs. A custom `plugins.root` needs a separate backup/persistent mount.
+Review plugin settings before enabling workloads; separate processes and venvs
+are not a filesystem, network, or credential sandbox.
 
 ## 5. Watch normal operation
 

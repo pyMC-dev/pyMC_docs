@@ -15,7 +15,9 @@ The current `openhop_repeater` repo supports several install shapes:
 - `modem_tcp` modem deployments over Wi-Fi or Ethernet
 - no-radio `null` mode for dashboard, API, or companion-only services
 
-The main configuration file is `/etc/openhop_repeater/config.yaml`.
+The main configuration file is `/etc/openhop_repeater/config.yaml`. The native
+management script targets Debian/Ubuntu-style Linux with APT and systemd. The
+Python package requires Python 3.10 or newer; the container uses Python 3.12.
 
 ## Standard install
 
@@ -30,10 +32,11 @@ sudo bash ./manage.sh install
 These development docs track the Repeater `dev` branch. Use `--branch main`
 instead when you intentionally want the stable branch.
 
-That flow installs the service, creates the config directory, and launches the
-terminal radio helper. The terminal helper currently configures direct `sx1262`
-presets or `kiss`; use the browser `/setup` flow or edit the config for CH341,
-openHop USB/TCP, or `null` deployments.
+That flow installs the services, creates the config directory, and starts Repeater.
+Complete onboarding in the browser at `http://<repeater-ip>:8000/setup`; it does
+not automatically launch the old terminal radio helper. The fresh canonical
+config uses `radio_type: null`, although existing or installer-preseeded configs
+may select hardware already.
 
 ## What the installer sets up
 
@@ -42,8 +45,15 @@ openHop USB/TCP, or `null` deployments.
 - `/etc/openhop_repeater`
 - `/var/lib/openhop_repeater`
 - `/var/log/openhop_repeater`
-- interactive radio and hardware configuration
+- browser-based radio and hardware onboarding after startup
 - `openhop-repeater.service`
+- `openhop-plugin-manager.service` for optional external applications
+
+The plugin manager is enabled by default when the `plugins` block is absent.
+Set `plugins.enabled: false` to opt out and restart the manager; systemd then
+intentionally skips its startup. Repeater itself does not depend on the manager.
+Plugins run as the `repeater` user in separate processes/virtual environments,
+not a security sandbox. Install only trusted plugins and dependencies.
 
 ## Re-running radio setup
 
@@ -56,9 +66,14 @@ sudo systemctl restart openhop-repeater
 
 The terminal helper supports:
 
-- direct `sx1262` hardware
+- SX1262 hardware presets, including the CH341 preset that sets `sx1262_ch341`
 - `kiss` modem mode
 - hardware presets from `radio-settings.json`
+
+Prefer the browser for reconfiguration. The legacy terminal helper performs
+text substitutions rather than structured YAML edits: back up first and check
+unrelated `port`/`baud_rate` values afterward, especially with KISS, GPS, or a
+custom HTTP port. It does not configure openHop USB/TCP or a multi-radio stack.
 
 Use `http://<repeater-ip>:8000/setup` only during first-run onboarding. After
 onboarding, use **System → Configuration → Radio → Radio Hardware** or update the
@@ -163,6 +178,46 @@ For containers, persistent volumes, and device mapping, use
 - Installed application and virtual environment: `/opt/openhop_repeater`
 - Logs via journald: `journalctl -u openhop-repeater`
 
+## Upgrading a native installation
+
+Back up config, identities, runtime data, and any custom plugin root before an
+upgrade. Stop plugin workloads as needed for a consistent backup. From a clean
+checkout, update the intended branch explicitly before invoking its management
+script; the current `manage.sh` uses local source and does not pull it for you:
+
+```bash
+cd openhop_repeater
+git status --short --branch
+git fetch origin
+git switch dev
+git pull --ff-only origin dev
+sudo bash ./manage.sh upgrade
+```
+
+Use `main` instead only when intentionally following that channel. Resolve local
+changes or divergent history rather than resetting them. Native upgrades preserve
+configuration and restart services, but the script's best-effort config backup
+does not replace a durable data/identity backup.
+
+**Existing native hosts must run the updated `manage.sh upgrade` once as an
+administrator.** A wheel-only update or the old dashboard updater does not replace
+the root-owned `/usr/local/bin/pymc-do-upgrade` helper. Once refreshed, subsequent
+dashboard upgrades can install the plugin-manager unit from the selected package.
+The helper rejects untrusted/writable execution trees; do not make the application
+venv service-writable or run the plugin manager as root to bypass that check.
+
+Afterward, verify the dashboard responds, radio initialization succeeds, and both
+services are healthy (or the manager is intentionally disabled):
+
+```bash
+sudo systemctl status openhop-repeater openhop-plugin-manager
+sudo journalctl -u openhop-repeater -u openhop-plugin-manager -n 100 --no-pager
+```
+
+The package depends on moving `openhop_core` `dev` source. Record the resolved Core
+revision with the Repeater version for support; a backend-only wheel update with
+dependencies skipped is not equivalent to the managed upgrade.
+
 ## Upgrading an older pyMC installation
 
 The current management script detects legacy `/opt/pymc_repeater`,
@@ -171,18 +226,8 @@ paths. During install or upgrade it migrates their contents to the openHop paths
 archives conflicting legacy directories, disables the old `pymc-repeater`
 service, and uses the `openhop-repeater` service going forward.
 
-Back up the config and identity material before upgrading. Use the management
-script rather than moving directories by hand. When running the script from a
-repository checkout, update that checkout first because `manage.sh` installs the
-local source tree:
-
-```bash
-cd openhop_repeater
-git fetch origin
-git switch dev
-git pull --ff-only origin dev
-sudo bash ./manage.sh upgrade
-```
+Follow the native upgrade and backup procedure above, using a current checkout
+outside the legacy installation directories rather than moving paths by hand.
 
 The managed installer uses the host's `python3-pip` package to bootstrap a
 dedicated virtual environment and installs build-version tooling inside that

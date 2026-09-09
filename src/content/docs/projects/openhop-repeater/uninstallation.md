@@ -13,10 +13,9 @@ data directory.
 :::
 
 This page tracks `manage.sh` at Repeater `dev` commit
-[`d57baabf`](https://github.com/openhop-dev/openhop_repeater/blob/d57baabf2e5069a2461b290a6586a3f57cafb20f/manage.sh).
-The README at that commit says optional paths are prompted separately, but the script
-does not implement those per-path prompts. Follow the script behavior documented
-here.
+[`ffd239d`](https://github.com/openhop-dev/openhop_repeater/blob/ffd239d/manage.sh).
+Both Repeater and plugin-manager services are removed. The script does not offer
+per-directory preservation prompts.
 
 ## Decide whether you want removal or a clean reset
 
@@ -31,6 +30,7 @@ Separate these categories before continuing:
 | Application and virtual environment | `/opt/openhop_repeater` | Installed code and Python environment |
 | Configuration | `/etc/openhop_repeater` | Radio, identity paths, HTTP, storage, MQTT, and service settings |
 | Runtime data | `/var/lib/openhop_repeater` | Application state, identity files, databases, charts, and other persistent data |
+| Plugins (default root) | `/var/lib/openhop_repeater/plugins` | Releases, retained wheels, venvs, settings, plugin data/logs, and manager state; deleted with runtime data |
 | Logs | `/var/log/openhop_repeater` | File-based logs where enabled; journald is managed separately |
 | Legacy pyMC paths | `/opt/pymc_repeater`, `/etc/pymc_repeater`, `/var/lib/pymc_repeater`, `/var/log/pymc_repeater` | Removed by the same current uninstaller |
 
@@ -74,9 +74,9 @@ sudo bash ./manage.sh uninstall
 The script requires root and obtains the global management lock. After the single
 confirmation it performs these actions:
 
-1. stops and disables `openhop-repeater.service`;
+1. stops and disables `openhop-plugin-manager.service` and `openhop-repeater.service`;
 2. attempts a configuration-only backup under `/tmp`;
-3. removes `/etc/systemd/system/openhop-repeater.service` and reloads systemd;
+3. removes both service units from `/etc/systemd/system` and reloads systemd;
 4. removes the Repeater polkit, sudoers, and upgrade-helper files;
 5. recursively deletes all current install/config/log/data paths;
 6. recursively deletes all listed legacy pyMC paths;
@@ -84,6 +84,12 @@ confirmation it performs these actions:
 
 These removals are not individually optional. Cancel at the confirmation screen if
 the durable backup or scope is not correct.
+
+This differs from uninstalling **one plugin**, which preserves that plugin's
+`data/` by default unless data deletion is explicitly requested. Native Repeater
+uninstallation deletes the default plugin root along with all runtime data. A
+custom `plugins.root` outside the listed directories is not automatically covered
+by these recursive deletions; back up and review it separately.
 
 The script does not document removal of every dependency package, hardware group,
 host udev rule, or journald record installed elsewhere on the system. Review those
@@ -97,6 +103,9 @@ After the script reports success, verify state rather than trusting the dialog a
 systemctl is-enabled openhop-repeater.service
 systemctl is-active openhop-repeater.service
 systemctl cat openhop-repeater.service
+systemctl is-enabled openhop-plugin-manager.service
+systemctl is-active openhop-plugin-manager.service
+systemctl cat openhop-plugin-manager.service
 ```
 
 The service should be absent/inactive. Also verify the four current application paths
@@ -116,6 +125,10 @@ named volumes:
 ```bash
 docker compose down
 ```
+
+Current images stop Repeater and the plugin manager together through their
+supervisor. Keeping the data volume also keeps plugin releases, settings, and
+data; custom plugin-root mounts require separate handling.
 
 The repository Compose file uses named volumes for:
 

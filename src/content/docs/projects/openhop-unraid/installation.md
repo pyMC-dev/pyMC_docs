@@ -69,6 +69,36 @@ identity-related changes.
 To change between Main and Dev, edit the container and select the other image tag.
 The openHop web UI cannot switch Docker image channels.
 
+## Application plugins on plugin-capable images
+
+The Unraid template keeps the official image's entrypoint; it does not launch a
+separate copy of Repeater or replace startup with `python -m repeater.main`.
+Current Repeater dev uses a container supervisor to start Repeater and its
+application-plugin manager together. Older Main images may not contain that
+subsystem: select and update the image deliberately rather than assuming channel
+parity.
+
+Keep both persistent mounts. With the normal `storage.storage_dir`, plugins live
+at `/var/lib/openhop_repeater/plugins`, inside the mapped appdata `data` directory.
+That includes installed releases, plugin state, data, and logs. Back up the whole
+directory before changing image channels; do not assume a downgrade can consume
+state written by a newer plugin or Repeater. A custom `plugins.root` must also
+point into persistent storage.
+
+No new published port or privileged mode is needed for plugin-manager IPC: it
+uses a local Unix socket. `plugins.enabled: false`, or the container environment
+variable `OPENHOP_PLUGIN_MANAGER=0`, disables manager startup on current dev.
+Install only trusted plugins: this template runs the container as root with
+access to its mounts and any explicitly mapped devices.
+
+If the UI works but the manager is unavailable, check for `Starting plugin manager`
+and manager restart errors in container logs, a disabled-manager setting, or a
+custom startup override. HTTP success by itself is not plugin readiness.
+
+Sources: [Unraid template](https://github.com/openhop-dev/OpenHop-Unraid-App/blob/d5d46dab94ca5dbb280d3f15c17f55d873956be9/templates/openhop-repeater.xml),
+[Repeater dev entrypoint](https://github.com/openhop-dev/openhop_repeater/blob/ffd239dd826e2c0b3185ba8358f9a4f9cb530aba/docker-entrypoint.sh),
+and [container supervisor](https://github.com/openhop-dev/openhop_repeater/blob/ffd239dd826e2c0b3185ba8358f9a4f9cb530aba/repeater/plugins/container_supervisor.py).
+
 ## Troubleshooting
 
 ```bash

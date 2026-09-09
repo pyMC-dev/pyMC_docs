@@ -33,11 +33,21 @@ a longer task-oriented index without creating a second project home page.
 ## Current feature areas
 
 - GPS receiver support and GPS time sync
-- background sensor plug-ins exposed through `/api/stats`
+- [managed application and service plugins](/projects/openhop-repeater/plugins/) with a catalogue, updates, logs, and persistent settings
+- built-in sensor modules exposed through `/api/stats`
 - openHop Modem HTTP GPS and `openhop_modem` sensor telemetry
 - `mqtt_brokers` based publishing
 - openHop Glass control-plane integration
-- new hardware presets including uConsole, meshadv, UltraPeater, and UltraPeaterZero
+- hardware presets including uConsole, meshadv, UltraPeater, and UltraPeaterZero
+- neighbour link history and region/scope discovery
+
+## Plugins
+
+- [Install and manage plugins in the dashboard](/projects/openhop-repeater/plugins/)
+- [Advanced administration and API automation](/projects/openhop-repeater/plugin-administration/)
+- [Build and package a plugin](/projects/openhop-repeater/plugin-development/)
+- [Plugin API and the rest of the REST contract](/projects/openhop-repeater/api-reference/)
+- [Authentication and plugin trust](/projects/openhop-repeater/security-and-authentication/)
 
 ## Useful pages
 

@@ -45,7 +45,10 @@ upgrading; commit subjects alone are not an operational migration guide.
 
 ## Before changing commits
 
-1. Back up configuration, identities, and persistent application data.
+1. Back up configuration, identities, and persistent application data, including
+   the plugin storage root if plugins are installed. Record each plugin's version
+   and enabled state as well as the Repeater version; plugins have their own
+   release and update lifecycle.
 2. Confirm whether the deployment is native, Docker, Home Assistant, or Unraid.
 3. Follow the matching upgrade path in [Installation](/projects/openhop-repeater/installation/)
    or [Docker Deployment](/projects/openhop-repeater/docker/).
